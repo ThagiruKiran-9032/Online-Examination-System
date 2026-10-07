@@ -26,21 +26,27 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        raise credentials_exception
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id: str = payload.get("sub")
         role: str = payload.get("role")
         if user_id is None:
             raise credentials_exception
-        token_data = TokenPayload(sub=user_id, role=role)
-    except JWTError:
+        token_data = TokenPayload(sub=str(user_id), role=role)
+    except (JWTError, ValueError, KeyError):
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == int(token_data.sub)).first()
+    try:
+        user = db.query(User).filter(User.id == int(token_data.sub)).first()
+    except (ValueError, TypeError):
+        raise credentials_exception
+
     if user is None:
         raise credentials_exception
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=400, detail="Inactive user account")
     return user
 
 def get_current_admin(current_user: User = Depends(get_current_user)) -> User:

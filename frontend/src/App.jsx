@@ -13,6 +13,7 @@ import { StudentManager } from './pages/admin/StudentManager';
 import { ExamResults } from './pages/admin/ExamResults';
 
 import { StudentDashboard } from './pages/student/Dashboard';
+import { StudentProfile } from './pages/student/Profile';
 import { TakeExam } from './pages/student/TakeExam';
 import { ExamResult } from './pages/student/ExamResult';
 import { ResultsList } from './pages/student/ResultsList';
@@ -70,6 +71,14 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="student">
                     <StudentDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/profile"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <StudentProfile />
                   </ProtectedRoute>
                 }
               />

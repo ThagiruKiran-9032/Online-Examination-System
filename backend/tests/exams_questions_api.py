@@ -4,7 +4,7 @@ from app.core.security import get_password_hash
 
 def create_admin_token(client, db_session):
     admin = User(
-        email="admin@test.com",
+        email="admin@gmail.com",
         full_name="Admin",
         hashed_password=get_password_hash("adminpass"),
         role="admin",
@@ -13,17 +13,17 @@ def create_admin_token(client, db_session):
     db_session.add(admin)
     db_session.commit()
 
-    resp = client.post("/api/auth/login", json={"email": "admin@test.com", "password": "adminpass"})
+    resp = client.post("/api/auth/login", json={"email": "admin@gmail.com", "password": "adminpass"})
     return resp.json()["access_token"]
 
 def create_student_token(client):
     client.post("/api/auth/register", json={
-        "email": "student@test.com",
+        "email": "student@gmail.com",
         "full_name": "Student",
         "password": "studentpass",
         "role": "student"
     })
-    login_resp = client.post("/api/auth/login", json={"email": "student@test.com", "password": "studentpass"})
+    login_resp = client.post("/api/auth/login", json={"email": "student@gmail.com", "password": "studentpass"})
     return login_resp.json()["access_token"]
 
 def test_exam_and_question_crud_flow(client, db_session):

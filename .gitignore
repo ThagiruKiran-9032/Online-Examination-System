@@ -1,24 +1,54 @@
 # Python
 __pycache__/
 *.py[cod]
-.venv/
+*$py.class
+*.so
+.Python
+env/
 venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
 .pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # Environment files
 **/.env
 **/.env.*
 !**/.env.example
 
-# Local databases
+# Local databases & logs
 *.db
 *.sqlite
 *.sqlite3
+*.log
 
-# Frontend build artifacts
+# Frontend build & dependencies
 frontend/node_modules/
 frontend/dist/
+frontend/.vite/
+node_modules/
+dist/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
 
 # Operating system files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary reports & scratch files
+project_report.txt
+tmp/
+scratch/

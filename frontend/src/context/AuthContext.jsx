@@ -38,9 +38,19 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
-  const register = async (email, full_name, password) => {
-    const res = await api.post('/auth/register', { email, full_name, password, role: 'student' });
+  const register = async (email, full_name, password, otp = null) => {
+    const payload = { email, full_name, password, role: 'student' };
+    if (otp) payload.otp = otp;
+    const res = await api.post('/auth/register', payload);
     return res.data;
+  };
+
+  const updateProfile = async (profileData) => {
+    const res = await api.put('/students/me', profileData);
+    const updatedUser = res.data;
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    return updatedUser;
   };
 
   const logout = () => {
@@ -51,7 +61,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, updateProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

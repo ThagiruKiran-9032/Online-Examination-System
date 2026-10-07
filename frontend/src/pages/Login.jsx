@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import api from '../api/axios';
+import { BookOpen, LogIn, AlertCircle, Eye, EyeOff, KeyRound, CheckCircle2 } from 'lucide-react';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -9,6 +10,16 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Forgot Password Modal State
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [resetStep, setResetStep] = useState(1); // 1 = Request OTP, 2 = Submit Reset
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [otpToken, setOtpToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [modalMsg, setModalMsg] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -27,6 +38,47 @@ export const Login = () => {
       setError(err.response?.data?.detail || 'Invalid email or password');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestOtp = async (e) => {
+    e.preventDefault();
+    setModalMsg(null);
+    setModalLoading(true);
+    try {
+      await api.post('/auth/forgot-password', { email: forgotEmail });
+      setResetStep(2);
+      setModalMsg({ type: 'success', text: 'Verification token sent! Please check your email inbox.' });
+    } catch (err) {
+      setModalMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to request reset token.' });
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setModalMsg(null);
+    setModalLoading(true);
+    try {
+      await api.post('/auth/reset-password', {
+        email: forgotEmail,
+        token: otpToken,
+        new_password: newPassword
+      });
+      setModalMsg({ type: 'success', text: 'Password reset successful! You can now sign in.' });
+      setTimeout(() => {
+        setShowForgotModal(false);
+        setEmail(forgotEmail);
+        setResetStep(1);
+        setOtpToken('');
+        setNewPassword('');
+        setModalMsg(null);
+      }, 2000);
+    } catch (err) {
+      setModalMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to reset password.' });
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -63,7 +115,21 @@ export const Login = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300">Password</label>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-medium text-slate-300">Password</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(email);
+                    setResetStep(1);
+                    setModalMsg(null);
+                    setShowForgotModal(true);
+                  }}
+                  className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <div className="relative mt-1">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -102,6 +168,124 @@ export const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-700">
+            <div className="flex items-center space-x-2 mb-4">
+              <KeyRound className="h-6 w-6 text-blue-400" />
+              <h2 className="text-xl font-bold text-white">Reset Account Password</h2>
+            </div>
+
+            {modalMsg && (
+              <div
+                className={`mb-4 p-3 rounded-lg text-sm flex items-center space-x-2 ${
+                  modalMsg.type === 'success'
+                    ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                    : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                }`}
+              >
+                {modalMsg.type === 'success' ? (
+                  <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                )}
+                <span>{modalMsg.text}</span>
+              </div>
+            )}
+
+            {resetStep === 1 ? (
+              <form onSubmit={handleRequestOtp} className="space-y-4">
+                <p className="text-xs text-slate-300">
+                  Enter your registered account email address. We will send a 6-character OTP token to your email via SMTP.
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="student@example.com"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 pt-4 border-t border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700 rounded-lg transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={modalLoading}
+                    className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition disabled:opacity-50"
+                  >
+                    {modalLoading ? 'Sending Token...' : 'Send Reset Token'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <p className="text-xs text-slate-300">
+                  Enter the 6-character verification token sent to <strong>{forgotEmail}</strong> and your new password.
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Verification Token (OTP)</label>
+                  <input
+                    type="text"
+                    required
+                    value={otpToken}
+                    onChange={(e) => setOtpToken(e.target.value)}
+                    placeholder="e.g. A1B2C3"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono tracking-widest text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex justify-between items-center pt-4 border-t border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setResetStep(1)}
+                    className="text-xs font-semibold text-slate-400 hover:text-slate-200"
+                  >
+                    ← Back
+                  </button>
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(false)}
+                      className="px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700 rounded-lg transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={modalLoading}
+                      className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition disabled:opacity-50"
+                    >
+                      {modalLoading ? 'Resetting Password...' : 'Reset Password'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

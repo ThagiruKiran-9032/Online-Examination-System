@@ -4,11 +4,11 @@ from app.core.security import get_password_hash
 
 def test_full_exam_runner_attempt_auto_grading_and_leaderboard(client, db_session):
     # 1. Setup Admin and Create Published Exam
-    admin = User(email="admin@exam.com", full_name="Admin User", hashed_password=get_password_hash("pass"), role="admin", is_active=True)
+    admin = User(email="admin@gmail.com", full_name="Admin User", hashed_password=get_password_hash("pass"), role="admin", is_active=True)
     db_session.add(admin)
     db_session.commit()
 
-    admin_login = client.post("/api/auth/login", json={"email": "admin@exam.com", "password": "pass"})
+    admin_login = client.post("/api/auth/login", json={"email": "admin@gmail.com", "password": "pass"})
     admin_token = admin_login.json()["access_token"]
     headers_admin = {"Authorization": f"Bearer {admin_token}"}
 
@@ -44,8 +44,8 @@ def test_full_exam_runner_attempt_auto_grading_and_leaderboard(client, db_sessio
     client.patch(f"/api/exams/{exam_id}/publish", headers=headers_admin)
 
     # 2. Register & Attempt Student 1
-    client.post("/api/auth/register", json={"email": "alice@student.com", "full_name": "Alice Smith", "password": "pass"})
-    alice_login = client.post("/api/auth/login", json={"email": "alice@student.com", "password": "pass"})
+    client.post("/api/auth/register", json={"email": "alice@gmail.com", "full_name": "Alice Smith", "password": "pass"})
+    alice_login = client.post("/api/auth/login", json={"email": "alice@gmail.com", "password": "pass"})
     alice_token = alice_login.json()["access_token"]
     headers_alice = {"Authorization": f"Bearer {alice_token}"}
 
@@ -73,8 +73,8 @@ def test_full_exam_runner_attempt_auto_grading_and_leaderboard(client, db_sessio
     assert res_alice["tab_switches"] == 1
 
     # 3. Register & Attempt Student 2 (Bob)
-    client.post("/api/auth/register", json={"email": "bob@student.com", "full_name": "Bob Jones", "password": "pass"})
-    bob_login = client.post("/api/auth/login", json={"email": "bob@student.com", "password": "pass"})
+    client.post("/api/auth/register", json={"email": "bob@gmail.com", "full_name": "Bob Jones", "password": "pass"})
+    bob_login = client.post("/api/auth/login", json={"email": "bob@gmail.com", "password": "pass"})
     bob_token = bob_login.json()["access_token"]
     headers_bob = {"Authorization": f"Bearer {bob_token}"}
 

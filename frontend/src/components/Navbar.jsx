@@ -57,16 +57,28 @@ export const Navbar = () => {
                 <NavLink to="/student/results" className={navLinkClass}>
                   My Results
                 </NavLink>
+                <NavLink to="/student/profile" className={navLinkClass}>
+                  My Profile
+                </NavLink>
               </>
             )}
 
             <div className="flex items-center space-x-3 pl-3 border-l border-slate-800">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-blue-400">
-                  {user.full_name?.charAt(0) || 'U'}
+              {user.role === 'student' ? (
+                <Link to="/student/profile" className="flex items-center space-x-2 hover:opacity-85 transition">
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-blue-400">
+                    {user.full_name?.charAt(0) || 'U'}
+                  </div>
+                  <span className="text-sm font-semibold text-slate-200 hidden md:inline">{user.full_name}</span>
+                </Link>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-blue-400">
+                    {user.full_name?.charAt(0) || 'U'}
+                  </div>
+                  <span className="text-sm font-semibold text-slate-200 hidden md:inline">{user.full_name}</span>
                 </div>
-                <span className="text-sm font-semibold text-slate-200 hidden md:inline">{user.full_name}</span>
-              </div>
+              )}
               <button
                 onClick={handleLogout}
                 className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-xl transition"
