@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Any
 
 from app.api import deps
+from app.core.email import send_exam_result_email
 from app.models.user import User
 from app.models.exam import Exam
 from app.models.question import Question
@@ -116,6 +117,7 @@ def record_warning(
 def submit_exam_attempt(
     attempt_id: int,
     payload: SubmitExamRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
     student_user: User = Depends(deps.get_current_student)
 ) -> Any:
@@ -187,6 +189,17 @@ def submit_exam_attempt(
     
     db.commit()
     db.refresh(attempt)
+    
+    background_tasks.add_task(
+        send_exam_result_email,
+        student_user.email,
+        student_user.full_name,
+        exam.title,
+        attempt.score,
+        attempt.total_possible_score,
+        exam.passing_marks,
+        attempt.passed
+    )
     
     return AttemptResultResponse(
         attempt_id=attempt.id,

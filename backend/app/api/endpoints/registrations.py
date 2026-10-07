@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Any
 
 from app.api import deps
+from app.core.email import send_exam_registration_email
 from app.models.user import User
 from app.models.exam import Exam
 from app.models.registration import ExamRegistration
@@ -13,6 +14,7 @@ router = APIRouter()
 @router.post("/exams/{exam_id}/register", response_model=RegistrationResponse, status_code=status.HTTP_201_CREATED)
 def register_for_exam(
     exam_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(deps.get_db),
     student_user: User = Depends(deps.get_current_student)
 ) -> Any:
@@ -31,6 +33,14 @@ def register_for_exam(
     db.add(reg)
     db.commit()
     db.refresh(reg)
+    
+    background_tasks.add_task(
+        send_exam_registration_email,
+        student_user.email,
+        student_user.full_name,
+        exam.title,
+        exam.category
+    )
     
     return RegistrationResponse(
         id=reg.id,

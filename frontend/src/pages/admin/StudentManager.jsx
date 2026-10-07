@@ -1,17 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import { Users, UserPlus, Trash2, Mail, Calendar, Eye, EyeOff } from 'lucide-react';
+import { Users, UserPlus, Trash2, Mail, Calendar, Eye, EyeOff, Edit3, Phone, Building } from 'lucide-react';
 
 export const StudentManager = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-
-  // New Student Form
+  
+  // Add Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [department, setDepartment] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Edit Modal State
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editFullName, setEditFullName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editDepartment, setEditDepartment] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -32,14 +43,55 @@ export const StudentManager = () => {
   const handleCreateStudent = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/students/', { full_name: fullName, email, password, role: 'student' });
-      setShowModal(false);
+      await api.post('/students/', {
+        full_name: fullName,
+        email,
+        phone: phone || null,
+        department: department || null,
+        password,
+        role: 'student'
+      });
+      setShowAddModal(false);
       setFullName('');
       setEmail('');
+      setPhone('');
+      setDepartment('');
       setPassword('');
       fetchStudents();
     } catch (err) {
       alert(err.response?.data?.detail || "Failed to create student");
+    }
+  };
+
+  const openEditModal = (st) => {
+    setEditingStudent(st);
+    setEditFullName(st.full_name || '');
+    setEditEmail(st.email || '');
+    setEditPhone(st.phone || '');
+    setEditDepartment(st.department || '');
+    setEditPassword('');
+  };
+
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+
+    try {
+      const payload = {
+        full_name: editFullName,
+        email: editEmail,
+        phone: editPhone || null,
+        department: editDepartment || null,
+      };
+      if (editPassword) {
+        payload.password = editPassword;
+      }
+
+      await api.put(`/students/${editingStudent.id}`, payload);
+      setEditingStudent(null);
+      fetchStudents();
+    } catch (err) {
+      alert(err.response?.data?.detail || "Failed to update student details");
     }
   };
 
@@ -58,10 +110,10 @@ export const StudentManager = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Student Directory</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage registered student accounts and credentials</p>
+          <p className="text-slate-500 text-sm mt-1">Manage registered student accounts and details</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowAddModal(true)}
           className="mt-4 md:mt-0 inline-flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-sm text-sm transition"
         >
           <UserPlus className="h-5 w-5" />
@@ -86,6 +138,8 @@ export const StudentManager = () => {
               <tr>
                 <th className="px-6 py-3.5">Student Name</th>
                 <th className="px-6 py-3.5">Email</th>
+                <th className="px-6 py-3.5">Department</th>
+                <th className="px-6 py-3.5">Phone</th>
                 <th className="px-6 py-3.5">Joined Date</th>
                 <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
@@ -105,13 +159,40 @@ export const StudentManager = () => {
                       <span>{st.email}</span>
                     </div>
                   </td>
+                  <td className="px-6 py-4 text-slate-600 text-xs">
+                    {st.department ? (
+                      <div className="flex items-center space-x-1">
+                        <Building className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{st.department}</span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 italic">N/A</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 text-xs">
+                    {st.phone ? (
+                      <div className="flex items-center space-x-1">
+                        <Phone className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{st.phone}</span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 italic">N/A</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-slate-500 text-xs">
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4 text-slate-400" />
                       <span>{new Date(st.created_at).toLocaleDateString()}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={() => openEditModal(st)}
+                      className="text-slate-400 hover:text-blue-600 transition p-1"
+                      title="Edit Student Details"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={() => handleDeleteStudent(st.id)}
                       className="text-slate-400 hover:text-red-600 transition p-1"
@@ -128,7 +209,7 @@ export const StudentManager = () => {
       )}
 
       {/* Add Student Modal */}
-      {showModal && (
+      {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <h2 className="text-xl font-bold text-slate-900 mb-4">Add New Student Account</h2>
@@ -158,6 +239,28 @@ export const StudentManager = () => {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Department</label>
+                <input
+                  type="text"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="e.g. Computer Science"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Password</label>
                 <div className="relative">
                   <input
@@ -173,7 +276,6 @@ export const StudentManager = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition"
-                    title={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -183,7 +285,7 @@ export const StudentManager = () => {
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => setShowAddModal(false)}
                   className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
                 >
                   Cancel
@@ -193,6 +295,97 @@ export const StudentManager = () => {
                   className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition shadow-sm"
                 >
                   Create Student
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {editingStudent && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Edit Student Details</h2>
+            <form onSubmit={handleUpdateStudent} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Department</label>
+                <input
+                  type="text"
+                  value={editDepartment}
+                  onChange={(e) => setEditDepartment(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                  Reset Password <span className="text-slate-400 font-normal lowercase">(leave blank to keep current)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showEditPassword ? "text" : "password"}
+                    minLength={6}
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder="New password (optional)"
+                    className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition"
+                  >
+                    {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingStudent(null)}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition shadow-sm"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>
